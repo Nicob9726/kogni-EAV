@@ -28,31 +28,61 @@
         #feedback-indicator {
             transition: opacity 0.5s ease-in-out;
         }
+        /* Styles für das räumliche Gedächtnis */
+        .spatial-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1rem;
+            max-width: 300px;
+            margin: auto;
+        }
+        .spatial-square {
+            width: 100%;
+            padding-bottom: 100%; /* 1:1 Aspect Ratio */
+            background-color: #374151; /* bg-gray-700 */
+            border-radius: 0.5rem;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        .spatial-square.highlight {
+            background-color: #0891b2; /* bg-cyan-600 */
+        }
+         .spatial-square.clicked {
+            background-color: #fde047; /* bg-yellow-300 */
+            opacity: 0.7;
+        }
     </style>
 </head>
 <body class="bg-gray-900 text-white flex items-center justify-center min-h-screen p-4">
 
-    <div id="app-container" class="w-full max-w-2xl mx-auto">
+    <div id="app-container" class="w-full max-w-3xl mx-auto">
 
         <!-- Hauptmenü -->
         <div id="main-menu" class="text-center">
             <h1 class="text-4xl font-bold mb-2 text-cyan-400">Kognitiver Trainer</h1>
             <p class="text-gray-400 mb-8">Wähle eine Aufgabe, um zu beginnen.</p>
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <!-- Karte 1: Kopfrechnen -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 <div onclick="startTask('arithmetic')" class="task-card bg-gray-800 p-6 rounded-lg cursor-pointer border border-gray-700">
                     <h2 class="text-2xl font-bold mb-2 text-white">Kopfrechnen</h2>
                     <p class="text-gray-400">Löse komplexe Rechenaufgaben gegen die Zeit.</p>
                 </div>
-                <!-- Karte 2: Zahlen merken -->
                 <div onclick="startTask('number-memory')" class="task-card bg-gray-800 p-6 rounded-lg cursor-pointer border border-gray-700">
                     <h2 class="text-2xl font-bold mb-2 text-white">Zahlen merken</h2>
                     <p class="text-gray-400">Merke dir eine wachsende Zahlenkette.</p>
                 </div>
-                <!-- Karte 3: Zahlen rückwärts -->
                 <div onclick="startTask('number-reverse')" class="task-card bg-gray-800 p-6 rounded-lg cursor-pointer border border-gray-700">
                     <h2 class="text-2xl font-bold mb-2 text-white">Zahlen rückwärts</h2>
                     <p class="text-gray-400">Gib eine Zahlenkette in umgekehrter Reihenfolge ein.</p>
+                </div>
+                <!-- NEU: Stroop-Test -->
+                <div onclick="startTask('stroop-test')" class="task-card bg-gray-800 p-6 rounded-lg cursor-pointer border border-gray-700">
+                    <h2 class="text-2xl font-bold mb-2 text-white">Stroop-Test</h2>
+                    <p class="text-gray-400">Benenne die Schriftfarbe, nicht das gelesene Wort.</p>
+                </div>
+                <!-- NEU: Räumliches Gedächtnis -->
+                <div onclick="startTask('spatial-memory')" class="task-card bg-gray-800 p-6 rounded-lg cursor-pointer border border-gray-700">
+                    <h2 class="text-2xl font-bold mb-2 text-white">Räumliches Gedächtnis</h2>
+                    <p class="text-gray-400">Merke dir die Sequenz der aufleuchtenden Quadrate.</p>
                 </div>
             </div>
         </div>
@@ -81,8 +111,8 @@
         let currentTask = null;
         let score = 0;
         let level = 1;
-        let taskTimeout; // setTimeout für die Aufgabenzeit
-        let countdownInterval; // setInterval für die Timer-Anzeige
+        let taskTimeout; 
+        let countdownInterval; 
 
         // Funktion zum Anzeigen des Hauptmenüs
         function showMenu() {
@@ -91,7 +121,6 @@
             currentTask = null;
             score = 0;
             level = 1;
-            // Sicherstellen, dass alle Timer gestoppt werden
             if (taskTimeout) clearTimeout(taskTimeout);
             if (countdownInterval) clearInterval(countdownInterval);
         }
@@ -106,28 +135,23 @@
         
         // Funktion zum Laden der spezifischen Aufgabe
         function loadTask() {
-            feedbackIndicator.className = 'mt-4 h-2 rounded-full opacity-0'; // Feedback zurücksetzen
-            // Bestehende Timer löschen, bevor neue gestartet werden
+            feedbackIndicator.className = 'mt-4 h-2 rounded-full opacity-0';
             if (taskTimeout) clearTimeout(taskTimeout);
             if (countdownInterval) clearInterval(countdownInterval);
 
             switch(currentTask) {
-                case 'arithmetic':
-                    loadArithmeticTask();
-                    break;
-                case 'number-memory':
-                    loadNumberMemoryTask();
-                    break;
-                case 'number-reverse':
-                    loadNumberReverseTask();
-                    break;
+                case 'arithmetic': loadArithmeticTask(); break;
+                case 'number-memory': loadNumberMemoryTask(); break;
+                case 'number-reverse': loadNumberReverseTask(); break;
+                case 'stroop-test': loadStroopTest(); break;
+                case 'spatial-memory': loadSpatialMemoryTask(); break;
             }
         }
 
         // --- AUFGABE 1: KOPFRECHNEN ---
         function timeUpArithmetic() {
-            clearInterval(countdownInterval); // Stoppt den visuellen Countdown
-            document.getElementById('arithmetic-input').disabled = true; // Deaktiviert die Eingabe
+            clearInterval(countdownInterval);
+            document.getElementById('arithmetic-input').disabled = true;
             showFeedback(false, 'Zeit abgelaufen!');
             score = Math.max(0, score - 1);
             setTimeout(loadArithmeticTask, 1500);
@@ -137,9 +161,7 @@
             const operators = ['+', '-', '*'];
             const operator = operators[Math.floor(Math.random() * operators.length)];
             let num1, num2, answer;
-
             const difficulty = 2 + Math.floor(level / 3); 
-
             if (operator === '*') {
                 num1 = Math.floor(Math.random() * (10 + level * 2)) + 5;
                 num2 = Math.floor(Math.random() * 10) + 2;
@@ -147,17 +169,12 @@
                 num1 = Math.floor(Math.random() * Math.pow(10, difficulty)) + Math.pow(10, difficulty-1);
                 num2 = Math.floor(Math.random() * Math.pow(10, difficulty)) + Math.pow(10, difficulty-1);
             }
-            
-            if (operator === '-' && num1 < num2) {
-                [num1, num2] = [num2, num1];
-            }
-
+            if (operator === '-' && num1 < num2) [num1, num2] = [num2, num1];
             switch(operator) {
                 case '+': answer = num1 + num2; break;
                 case '-': answer = num1 - num2; break;
                 case '*': answer = num1 * num2; break;
             }
-
             taskContent.innerHTML = `
                 <h2 class="text-2xl font-bold mb-4 text-cyan-400">Kopfrechnen - Level ${level}</h2>
                 <div id="timer-display" class="text-right text-2xl font-bold text-yellow-400 mb-4">Zeit: 10s</div>
@@ -168,41 +185,28 @@
                 </div>
                 <div class="text-center mt-4 text-lg">Score: <span class="font-bold">${score}</span></div>
             `;
-            
             document.getElementById('arithmetic-input').focus();
             document.getElementById('arithmetic-input').addEventListener('keydown', (e) => {
-                if (e.key === 'Enter') {
-                    checkArithmeticAnswer(answer);
-                }
+                if (e.key === 'Enter') checkArithmeticAnswer(answer);
             });
-
-            // NEU: Timer Logik
             let timeLeft = 10;
-            taskTimeout = setTimeout(timeUpArithmetic, 10000); // 10 Sekunden Timer
+            taskTimeout = setTimeout(timeUpArithmetic, 10000);
             countdownInterval = setInterval(() => {
                 timeLeft--;
                 const timerDisplay = document.getElementById('timer-display');
-                if(timerDisplay) {
-                    timerDisplay.textContent = `Zeit: ${timeLeft}s`;
-                }
+                if(timerDisplay) timerDisplay.textContent = `Zeit: ${timeLeft}s`;
             }, 1000);
         }
 
         function checkArithmeticAnswer(correctAnswer) {
-            // Timer stoppen, sobald eine Antwort eingegeben wird
             clearTimeout(taskTimeout);
             clearInterval(countdownInterval);
-
             const userInput = document.getElementById('arithmetic-input').value;
             if (userInput === '') return;
-
             if (parseInt(userInput) === correctAnswer) {
-                score++;
-                level++;
-                showFeedback(true);
+                score++; level++; showFeedback(true);
             } else {
-                score = Math.max(0, score - 1);
-                showFeedback(false, `Falsch. Richtige Antwort: ${correctAnswer}`);
+                score = Math.max(0, score - 1); showFeedback(false, `Falsch. Richtige Antwort: ${correctAnswer}`);
             }
             setTimeout(loadArithmeticTask, 1500);
         }
@@ -227,38 +231,26 @@
         function showNumberSequence() {
             const sequenceLength = 3 + level;
             numberSequence = '';
-            for (let i = 0; i < sequenceLength; i++) {
-                numberSequence += Math.floor(Math.random() * 10);
-            }
-
+            for (let i = 0; i < sequenceLength; i++) numberSequence += Math.floor(Math.random() * 10);
             const numberDisplay = document.getElementById('number-display');
             numberDisplay.innerHTML = numberSequence;
-
-            // GEÄNDERT: Feste Anzeigezeit von 8 Sekunden
-            const displayTime = 8000; 
             setTimeout(() => {
                 numberDisplay.innerHTML = '';
                 document.getElementById('input-area').classList.remove('hidden');
                 document.getElementById('number-memory-input').focus();
                  document.getElementById('number-memory-input').addEventListener('keydown', (e) => {
-                    if (e.key === 'Enter') {
-                        checkNumberMemory();
-                    }
+                    if (e.key === 'Enter') checkNumberMemory();
                 });
-            }, displayTime);
+            }, 8000);
         }
 
         function checkNumberMemory() {
             const userInput = document.getElementById('number-memory-input').value;
             if (userInput === '') return;
-
             if (userInput === numberSequence) {
-                score++;
-                level++;
-                showFeedback(true);
+                score++; level++; showFeedback(true);
             } else {
-                score = Math.max(0, score - 1);
-                showFeedback(false, `Falsch. Die Kette war: ${numberSequence}`);
+                score = Math.max(0, score - 1); showFeedback(false, `Falsch. Die Kette war: ${numberSequence}`);
             }
             setTimeout(loadNumberMemoryTask, 1500);
         }
@@ -283,43 +275,143 @@
         function showReverseNumberSequence() {
             const sequenceLength = 2 + level;
             reverseNumberSequence = '';
-            for (let i = 0; i < sequenceLength; i++) {
-                reverseNumberSequence += Math.floor(Math.random() * 10);
-            }
-
+            for (let i = 0; i < sequenceLength; i++) reverseNumberSequence += Math.floor(Math.random() * 10);
             const numberDisplay = document.getElementById('reverse-number-display');
             numberDisplay.innerHTML = reverseNumberSequence;
-
-            // GEÄNDERT: Feste Anzeigezeit von 8 Sekunden
-            const displayTime = 8000;
             setTimeout(() => {
                 numberDisplay.innerHTML = '';
                 document.getElementById('reverse-input-area').classList.remove('hidden');
                 document.getElementById('number-reverse-input').focus();
                  document.getElementById('number-reverse-input').addEventListener('keydown', (e) => {
-                    if (e.key === 'Enter') {
-                        checkNumberReverse();
-                    }
+                    if (e.key === 'Enter') checkNumberReverse();
                 });
-            }, displayTime);
+            }, 8000);
         }
 
         function checkNumberReverse() {
             const userInput = document.getElementById('number-reverse-input').value;
             if (userInput === '') return;
-
             const reversedSequence = reverseNumberSequence.split('').reverse().join('');
             if (userInput === reversedSequence) {
-                score++;
-                level++;
-                showFeedback(true);
+                score++; level++; showFeedback(true);
             } else {
-                score = Math.max(0, score - 1);
-                showFeedback(false, `Falsch. Richtig (rückwärts) wäre: ${reversedSequence}`);
+                score = Math.max(0, score - 1); showFeedback(false, `Falsch. Richtig (rückwärts) wäre: ${reversedSequence}`);
             }
             setTimeout(loadNumberReverseTask, 1500);
         }
 
+        // --- NEU: AUFGABE 4: STROOP-TEST ---
+        function loadStroopTest() {
+            const colors = { 'Rot': 'text-red-500', 'Grün': 'text-green-500', 'Blau': 'text-blue-500', 'Gelb': 'text-yellow-500' };
+            const colorNames = Object.keys(colors);
+
+            let wordName = colorNames[Math.floor(Math.random() * colorNames.length)];
+            let colorName = colorNames[Math.floor(Math.random() * colorNames.length)];
+            
+            // Sicherstellen, dass Wort und Farbe nicht übereinstimmen (klassischer Stroop-Effekt)
+            while (wordName === colorName) {
+                colorName = colorNames[Math.floor(Math.random() * colorNames.length)];
+            }
+
+            const buttonsHtml = colorNames.map(name => 
+                `<button onclick="checkStroopAnswer('${name}', '${colorName}')" class="btn bg-gray-700 hover:bg-gray-600 text-white font-bold py-3 px-6 rounded-lg text-xl">${name}</button>`
+            ).join('');
+
+            taskContent.innerHTML = `
+                <h2 class="text-2xl font-bold mb-4 text-cyan-400">Stroop-Test - Level ${level}</h2>
+                <p class="text-gray-400 mb-6">Wähle die Farbe, in der das Wort geschrieben ist, nicht das Wort selbst!</p>
+                <div class="text-6xl font-bold text-center p-8 bg-gray-900 rounded-lg mb-8 ${colors[colorName]}">${wordName.toUpperCase()}</div>
+                <div class="flex justify-center gap-4">
+                    ${buttonsHtml}
+                </div>
+                <div class="text-center mt-6 text-lg">Score: <span class="font-bold">${score}</span></div>
+            `;
+        }
+
+        function checkStroopAnswer(userChoice, correctColor) {
+            if (userChoice === correctColor) {
+                score++; level++; showFeedback(true);
+            } else {
+                score = Math.max(0, score - 1); showFeedback(false, `Falsch. Die Farbe war ${correctColor}.`);
+            }
+            setTimeout(loadStroopTest, 1500);
+        }
+
+        // --- NEU: AUFGABE 5: RÄUMLICHES GEDÄCHTNIS ---
+        let spatialSequence = [];
+        let userSpatialSequence = [];
+        
+        function loadSpatialMemoryTask() {
+            userSpatialSequence = []; // User-Eingabe zurücksetzen
+            taskContent.innerHTML = `
+                <h2 class="text-2xl font-bold mb-4 text-cyan-400">Räumliches Gedächtnis - Level ${level}</h2>
+                <p class="text-gray-400 mb-6">Merke dir die Sequenz. Klicke danach die Quadrate in der gleichen Reihenfolge an.</p>
+                <div id="spatial-grid-container">
+                    <div class="spatial-grid">
+                        ${[...Array(9)].map((_, i) => `<div id="square-${i}" class="spatial-square"></div>`).join('')}
+                    </div>
+                </div>
+                <div id="spatial-start-button" class="text-center mt-6">
+                     <button onclick="startSpatialSequence()" class="btn bg-cyan-600 hover:bg-cyan-700 text-white font-bold py-3 px-8 rounded-lg text-xl">Sequenz starten</button>
+                </div>
+                <div class="text-center mt-6 text-lg">Score: <span class="font-bold">${score}</span></div>
+            `;
+        }
+
+        function startSpatialSequence() {
+            document.getElementById('spatial-start-button').classList.add('hidden');
+            const sequenceLength = 2 + level;
+            spatialSequence = [];
+            for (let i = 0; i < sequenceLength; i++) {
+                let nextSquare;
+                do {
+                    nextSquare = Math.floor(Math.random() * 9);
+                } while (spatialSequence.includes(nextSquare)); // Verhindert (optional) direkte Wiederholungen
+                spatialSequence.push(nextSquare);
+            }
+
+            let i = 0;
+            const interval = setInterval(() => {
+                if (i < spatialSequence.length) {
+                    const square = document.getElementById(`square-${spatialSequence[i]}`);
+                    square.classList.add('highlight');
+                    setTimeout(() => square.classList.remove('highlight'), 500);
+                    i++;
+                } else {
+                    clearInterval(interval);
+                    enableSpatialInput();
+                }
+            }, 700);
+        }
+
+        function enableSpatialInput() {
+            const squares = document.querySelectorAll('.spatial-square');
+            squares.forEach((square, index) => {
+                square.onclick = () => handleSquareClick(index);
+            });
+        }
+
+        function handleSquareClick(index) {
+            if (userSpatialSequence.length >= spatialSequence.length) return; // Verhindert zu viele Klicks
+
+            const square = document.getElementById(`square-${index}`);
+            square.classList.add('clicked');
+            userSpatialSequence.push(index);
+
+            if (userSpatialSequence.length === spatialSequence.length) {
+                checkSpatialMemory();
+            }
+        }
+
+        function checkSpatialMemory() {
+            const isCorrect = JSON.stringify(userSpatialSequence) === JSON.stringify(spatialSequence);
+            if (isCorrect) {
+                score++; level++; showFeedback(true);
+            } else {
+                score = Math.max(0, score - 1); showFeedback(false, 'Falsche Sequenz.');
+            }
+            setTimeout(loadSpatialMemoryTask, 1500);
+        }
 
         // --- Helferfunktionen ---
         function showFeedback(isCorrect, message = '') {
@@ -328,10 +420,8 @@
             } else {
                 feedbackIndicator.className = 'mt-4 h-2 rounded-full bg-red-500 opacity-100';
                 if (message) {
-                    // Verhindern, dass mehrere Fehlermeldungen hinzugefügt werden
                     const existingMessage = taskContent.querySelector('.error-message');
                     if (existingMessage) existingMessage.remove();
-
                     const tempMessage = document.createElement('div');
                     tempMessage.className = 'text-center text-red-400 font-bold mt-2 error-message';
                     tempMessage.textContent = message;
