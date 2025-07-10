@@ -1,4 +1,3 @@
-
 function startModule(module) {
     const app = document.getElementById('app');
     app.innerHTML = '';
@@ -39,23 +38,48 @@ function startModule(module) {
 
 function checkMemory(correct) {
     const input = document.getElementById('userInput').value;
-    alert(input === correct ? 'Richtig!' : 'Falsch. Die richtige Zahl war: ' + correct);
+    if (input === correct) {
+        alert('Richtig!');
+        startModule('memory');
+    } else {
+        alert('Falsch. Die richtige Zahl war: ' + correct);
+    }
 }
 
 function checkReaction(clicked, correct) {
-    alert(clicked === correct ? 'Richtig!' : 'Falsch! Richtige Farbe war: ' + correct);
+    if (clicked === correct) {
+        alert('Richtig!');
+        startModule('reaction');
+    } else {
+        alert('Falsch! Richtige Farbe war: ' + correct);
+    }
 }
 
 function checkMath(result) {
     const input = parseInt(document.getElementById('mathInput').value);
-    alert(input === result ? 'Richtig!' : 'Falsch. Ergebnis war: ' + result);
+    if (input === result) {
+        alert('Richtig!');
+        startModule('math');
+    } else {
+        alert('Falsch. Ergebnis war: ' + result);
+    }
 }
 
 function checkGo(correct) {
-    alert(correct ? 'Richtig gedrückt!' : 'Fehler – es stand NO!');
+    if (correct) {
+        alert('Richtig gedrückt!');
+        startModule('goNoGo');
+    } else {
+        alert('Fehler – es stand NO!');
+    }
 }
 
 function checkPattern() {
     const input = parseInt(document.getElementById('patternInput').value);
-    alert(input === 8 ? 'Richtig!' : 'Falsch. Richtig wäre: 8');
+    if (input === 8) {
+        alert('Richtig!');
+        startModule('pattern');
+    } else {
+        alert('Falsch. Richtig wäre: 8');
+    }
 }
