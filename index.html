@@ -3,16 +3,308 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Kognitive Trainingsapp</title>
+    <title>Kognitiver Trainer für Spezialkräfte</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Roboto', sans-serif;
+        }
+        .task-card {
+            transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+        }
+        .task-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+        .btn {
+            transition: background-color 0.2s ease-in-out, transform 0.1s ease-in-out;
+        }
+        .btn:active {
+            transform: scale(0.98);
+        }
+        #feedback-indicator {
+            transition: opacity 0.5s ease-in-out;
+        }
+    </style>
 </head>
-<body>
-    <h1>Kognitive Tests</h1>
-    <button onclick="startModule('memory')">Zahl merken</button>
-    <button onclick="startModule('reaction')">Reaktionstest</button>
-    <button onclick="startModule('math')">Kopfrechnen</button>
-    <button onclick="startModule('goNoGo')">Go / No-Go</button>
-    <button onclick="startModule('pattern')">Zahlenmuster</button>
-    <div id="app"></div>
-    <script src="script.js"></script>
+<body class="bg-gray-900 text-white flex items-center justify-center min-h-screen p-4">
+
+    <div id="app-container" class="w-full max-w-2xl mx-auto">
+
+        <!-- Hauptmenü -->
+        <div id="main-menu" class="text-center">
+            <h1 class="text-4xl font-bold mb-2 text-cyan-400">Kognitiver Trainer</h1>
+            <p class="text-gray-400 mb-8">Wähle eine Aufgabe, um zu beginnen.</p>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <!-- Karte 1: Kopfrechnen -->
+                <div onclick="startTask('arithmetic')" class="task-card bg-gray-800 p-6 rounded-lg cursor-pointer border border-gray-700">
+                    <h2 class="text-2xl font-bold mb-2 text-white">Kopfrechnen</h2>
+                    <p class="text-gray-400">Löse komplexe Rechenaufgaben gegen die Zeit.</p>
+                </div>
+                <!-- Karte 2: Zahlen merken -->
+                <div onclick="startTask('number-memory')" class="task-card bg-gray-800 p-6 rounded-lg cursor-pointer border border-gray-700">
+                    <h2 class="text-2xl font-bold mb-2 text-white">Zahlen merken</h2>
+                    <p class="text-gray-400">Merke dir eine wachsende Zahlenkette.</p>
+                </div>
+                <!-- Karte 3: Zahlen rückwärts -->
+                <div onclick="startTask('number-reverse')" class="task-card bg-gray-800 p-6 rounded-lg cursor-pointer border border-gray-700">
+                    <h2 class="text-2xl font-bold mb-2 text-white">Zahlen rückwärts</h2>
+                    <p class="text-gray-400">Gib eine Zahlenkette in umgekehrter Reihenfolge ein.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Aufgaben-Container -->
+        <div id="task-container" class="hidden">
+            <button onclick="showMenu()" class="btn bg-gray-700 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded-lg mb-6">&larr; Zurück zum Menü</button>
+            
+            <div id="task-content" class="bg-gray-800 p-8 rounded-lg border border-gray-700 shadow-lg">
+                <!-- Dynamischer Inhalt der Aufgabe wird hier geladen -->
+            </div>
+
+            <!-- Feedback Indikator -->
+            <div id="feedback-indicator" class="mt-4 h-2 rounded-full opacity-0"></div>
+        </div>
+    </div>
+
+    <script>
+        // DOM-Elemente
+        const mainMenu = document.getElementById('main-menu');
+        const taskContainer = document.getElementById('task-container');
+        const taskContent = document.getElementById('task-content');
+        const feedbackIndicator = document.getElementById('feedback-indicator');
+
+        // Spielstatus
+        let currentTask = null;
+        let score = 0;
+        let level = 1;
+        let timer;
+
+        // Funktion zum Anzeigen des Hauptmenüs
+        function showMenu() {
+            mainMenu.classList.remove('hidden');
+            taskContainer.classList.add('hidden');
+            currentTask = null;
+            score = 0;
+            level = 1;
+            if (timer) clearInterval(timer);
+        }
+
+        // Funktion zum Starten einer Aufgabe
+        function startTask(taskName) {
+            currentTask = taskName;
+            mainMenu.classList.add('hidden');
+            taskContainer.classList.remove('hidden');
+            loadTask();
+        }
+        
+        // Funktion zum Laden der spezifischen Aufgabe
+        function loadTask() {
+            feedbackIndicator.className = 'mt-4 h-2 rounded-full opacity-0'; // Reset feedback
+            switch(currentTask) {
+                case 'arithmetic':
+                    loadArithmeticTask();
+                    break;
+                case 'number-memory':
+                    loadNumberMemoryTask();
+                    break;
+                case 'number-reverse':
+                    loadNumberReverseTask();
+                    break;
+            }
+        }
+
+        // --- AUFGABE 1: KOPFRECHNEN ---
+        function loadArithmeticTask() {
+            const operators = ['+', '-', '*'];
+            const operator = operators[Math.floor(Math.random() * operators.length)];
+            let num1, num2, answer;
+
+            // Schwierigkeit anpassen
+            const difficulty = 2 + Math.floor(level / 3); // Erhöht die Anzahl der Stellen alle 3 Level
+
+            if (operator === '*') {
+                num1 = Math.floor(Math.random() * (10 + level * 2)) + 5;
+                num2 = Math.floor(Math.random() * 10) + 2;
+            } else {
+                num1 = Math.floor(Math.random() * Math.pow(10, difficulty)) + Math.pow(10, difficulty-1);
+                num2 = Math.floor(Math.random() * Math.pow(10, difficulty)) + Math.pow(10, difficulty-1);
+            }
+            
+            if (operator === '-' && num1 < num2) {
+                [num1, num2] = [num2, num1]; // Sicherstellen, dass das Ergebnis nicht negativ ist
+            }
+
+            switch(operator) {
+                case '+': answer = num1 + num2; break;
+                case '-': answer = num1 - num2; break;
+                case '*': answer = num1 * num2; break;
+            }
+
+            taskContent.innerHTML = `
+                <h2 class="text-2xl font-bold mb-4 text-cyan-400">Kopfrechnen - Level ${level}</h2>
+                <p class="text-gray-400 mb-6">Löse die folgende Aufgabe so schnell wie möglich.</p>
+                <div class="text-5xl font-bold text-center p-8 bg-gray-900 rounded-lg mb-6">${num1} ${operator} ${num2}</div>
+                <div class="flex flex-col items-center">
+                    <input id="arithmetic-input" type="number" class="bg-gray-700 border border-gray-600 text-white text-2xl rounded-lg focus:ring-cyan-500 focus:border-cyan-500 block w-full p-4 text-center mb-4" placeholder="Deine Antwort" required>
+                    <button onclick="checkArithmeticAnswer(${answer})" class="btn bg-cyan-600 hover:bg-cyan-700 text-white font-bold py-3 px-8 rounded-lg text-xl">Prüfen</button>
+                </div>
+                <div class="text-center mt-4 text-lg">Score: <span class="font-bold">${score}</span></div>
+            `;
+            
+            document.getElementById('arithmetic-input').focus();
+            document.getElementById('arithmetic-input').addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    checkArithmeticAnswer(answer);
+                }
+            });
+        }
+
+        function checkArithmeticAnswer(correctAnswer) {
+            const userInput = document.getElementById('arithmetic-input').value;
+            if (userInput === '') return;
+
+            if (parseInt(userInput) === correctAnswer) {
+                score++;
+                level++;
+                showFeedback(true);
+            } else {
+                score = Math.max(0, score - 1); // Punktabzug bei Fehler
+                showFeedback(false, `Falsch. Richtige Antwort: ${correctAnswer}`);
+            }
+            setTimeout(loadArithmeticTask, 1500);
+        }
+
+        // --- AUFGABE 2: ZAHLEN MERKEN ---
+        let numberSequence = '';
+        function loadNumberMemoryTask() {
+            taskContent.innerHTML = `
+                <h2 class="text-2xl font-bold mb-4 text-cyan-400">Zahlen merken - Level ${level}</h2>
+                <p class="text-gray-400 mb-6">Merke dir die folgende Zahlenkette. Sie wird gleich verschwinden.</p>
+                <div id="number-display" class="text-5xl font-bold text-center p-8 bg-gray-900 rounded-lg mb-6 min-h-[100px] flex items-center justify-center">
+                    <button id="start-btn" onclick="showNumberSequence()" class="btn bg-cyan-600 hover:bg-cyan-700 text-white font-bold py-3 px-8 rounded-lg text-xl">Start</button>
+                </div>
+                <div id="input-area" class="hidden flex-col items-center">
+                    <input id="number-memory-input" type="number" class="bg-gray-700 border border-gray-600 text-white text-2xl rounded-lg focus:ring-cyan-500 focus:border-cyan-500 block w-full p-4 text-center mb-4" placeholder="Gib die Zahlenkette ein" required>
+                    <button onclick="checkNumberMemory()" class="btn bg-cyan-600 hover:bg-cyan-700 text-white font-bold py-3 px-8 rounded-lg text-xl">Prüfen</button>
+                </div>
+                 <div class="text-center mt-4 text-lg">Score: <span class="font-bold">${score}</span></div>
+            `;
+        }
+        
+        function showNumberSequence() {
+            const sequenceLength = 3 + level;
+            numberSequence = '';
+            for (let i = 0; i < sequenceLength; i++) {
+                numberSequence += Math.floor(Math.random() * 10);
+            }
+
+            const numberDisplay = document.getElementById('number-display');
+            numberDisplay.innerHTML = numberSequence;
+
+            const displayTime = 1500 + level * 200; // Längere Anzeigezeit für längere Ketten
+            setTimeout(() => {
+                numberDisplay.innerHTML = '';
+                document.getElementById('input-area').classList.remove('hidden');
+                document.getElementById('number-memory-input').focus();
+                 document.getElementById('number-memory-input').addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter') {
+                        checkNumberMemory();
+                    }
+                });
+            }, displayTime);
+        }
+
+        function checkNumberMemory() {
+            const userInput = document.getElementById('number-memory-input').value;
+            if (userInput === '') return;
+
+            if (userInput === numberSequence) {
+                score++;
+                level++;
+                showFeedback(true);
+            } else {
+                score = Math.max(0, score - 1);
+                showFeedback(false, `Falsch. Die Kette war: ${numberSequence}`);
+            }
+            setTimeout(loadNumberMemoryTask, 1500);
+        }
+
+        // --- AUFGABE 3: ZAHLEN RÜCKWÄRTS ---
+        let reverseNumberSequence = '';
+        function loadNumberReverseTask() {
+            taskContent.innerHTML = `
+                <h2 class="text-2xl font-bold mb-4 text-cyan-400">Zahlen rückwärts - Level ${level}</h2>
+                <p class="text-gray-400 mb-6">Gib die folgende Zahlenkette in umgekehrter Reihenfolge ein.</p>
+                <div id="reverse-number-display" class="text-5xl font-bold text-center p-8 bg-gray-900 rounded-lg mb-6 min-h-[100px] flex items-center justify-center">
+                    <button id="start-reverse-btn" onclick="showReverseNumberSequence()" class="btn bg-cyan-600 hover:bg-cyan-700 text-white font-bold py-3 px-8 rounded-lg text-xl">Start</button>
+                </div>
+                <div id="reverse-input-area" class="hidden flex-col items-center">
+                    <input id="number-reverse-input" type="number" class="bg-gray-700 border border-gray-600 text-white text-2xl rounded-lg focus:ring-cyan-500 focus:border-cyan-500 block w-full p-4 text-center mb-4" placeholder="Gib die Kette rückwärts ein" required>
+                    <button onclick="checkNumberReverse()" class="btn bg-cyan-600 hover:bg-cyan-700 text-white font-bold py-3 px-8 rounded-lg text-xl">Prüfen</button>
+                </div>
+                 <div class="text-center mt-4 text-lg">Score: <span class="font-bold">${score}</span></div>
+            `;
+        }
+
+        function showReverseNumberSequence() {
+            const sequenceLength = 2 + level;
+            reverseNumberSequence = '';
+            for (let i = 0; i < sequenceLength; i++) {
+                reverseNumberSequence += Math.floor(Math.random() * 10);
+            }
+
+            const numberDisplay = document.getElementById('reverse-number-display');
+            numberDisplay.innerHTML = reverseNumberSequence;
+
+            const displayTime = 1500 + level * 250;
+            setTimeout(() => {
+                numberDisplay.innerHTML = '';
+                document.getElementById('reverse-input-area').classList.remove('hidden');
+                document.getElementById('number-reverse-input').focus();
+                 document.getElementById('number-reverse-input').addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter') {
+                        checkNumberReverse();
+                    }
+                });
+            }, displayTime);
+        }
+
+        function checkNumberReverse() {
+            const userInput = document.getElementById('number-reverse-input').value;
+            if (userInput === '') return;
+
+            const reversedSequence = reverseNumberSequence.split('').reverse().join('');
+            if (userInput === reversedSequence) {
+                score++;
+                level++;
+                showFeedback(true);
+            } else {
+                score = Math.max(0, score - 1);
+                showFeedback(false, `Falsch. Richtig (rückwärts) wäre: ${reversedSequence}`);
+            }
+            setTimeout(loadNumberReverseTask, 1500);
+        }
+
+
+        // --- Helferfunktionen ---
+        function showFeedback(isCorrect, message = '') {
+            if (isCorrect) {
+                feedbackIndicator.className = 'mt-4 h-2 rounded-full bg-green-500 opacity-100';
+            } else {
+                feedbackIndicator.className = 'mt-4 h-2 rounded-full bg-red-500 opacity-100';
+                if (message) {
+                    const tempMessage = document.createElement('div');
+                    tempMessage.className = 'text-center text-red-400 font-bold mt-2';
+                    tempMessage.textContent = message;
+                    taskContent.appendChild(tempMessage);
+                }
+            }
+        }
+
+    </script>
 </body>
 </html>
