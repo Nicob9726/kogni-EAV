@@ -81,7 +81,8 @@
         let currentTask = null;
         let score = 0;
         let level = 1;
-        let timer;
+        let taskTimeout; // setTimeout für die Aufgabenzeit
+        let countdownInterval; // setInterval für die Timer-Anzeige
 
         // Funktion zum Anzeigen des Hauptmenüs
         function showMenu() {
@@ -90,7 +91,9 @@
             currentTask = null;
             score = 0;
             level = 1;
-            if (timer) clearInterval(timer);
+            // Sicherstellen, dass alle Timer gestoppt werden
+            if (taskTimeout) clearTimeout(taskTimeout);
+            if (countdownInterval) clearInterval(countdownInterval);
         }
 
         // Funktion zum Starten einer Aufgabe
@@ -103,7 +106,11 @@
         
         // Funktion zum Laden der spezifischen Aufgabe
         function loadTask() {
-            feedbackIndicator.className = 'mt-4 h-2 rounded-full opacity-0'; // Reset feedback
+            feedbackIndicator.className = 'mt-4 h-2 rounded-full opacity-0'; // Feedback zurücksetzen
+            // Bestehende Timer löschen, bevor neue gestartet werden
+            if (taskTimeout) clearTimeout(taskTimeout);
+            if (countdownInterval) clearInterval(countdownInterval);
+
             switch(currentTask) {
                 case 'arithmetic':
                     loadArithmeticTask();
@@ -118,13 +125,20 @@
         }
 
         // --- AUFGABE 1: KOPFRECHNEN ---
+        function timeUpArithmetic() {
+            clearInterval(countdownInterval); // Stoppt den visuellen Countdown
+            document.getElementById('arithmetic-input').disabled = true; // Deaktiviert die Eingabe
+            showFeedback(false, 'Zeit abgelaufen!');
+            score = Math.max(0, score - 1);
+            setTimeout(loadArithmeticTask, 1500);
+        }
+
         function loadArithmeticTask() {
             const operators = ['+', '-', '*'];
             const operator = operators[Math.floor(Math.random() * operators.length)];
             let num1, num2, answer;
 
-            // Schwierigkeit anpassen
-            const difficulty = 2 + Math.floor(level / 3); // Erhöht die Anzahl der Stellen alle 3 Level
+            const difficulty = 2 + Math.floor(level / 3); 
 
             if (operator === '*') {
                 num1 = Math.floor(Math.random() * (10 + level * 2)) + 5;
@@ -135,7 +149,7 @@
             }
             
             if (operator === '-' && num1 < num2) {
-                [num1, num2] = [num2, num1]; // Sicherstellen, dass das Ergebnis nicht negativ ist
+                [num1, num2] = [num2, num1];
             }
 
             switch(operator) {
@@ -146,7 +160,7 @@
 
             taskContent.innerHTML = `
                 <h2 class="text-2xl font-bold mb-4 text-cyan-400">Kopfrechnen - Level ${level}</h2>
-                <p class="text-gray-400 mb-6">Löse die folgende Aufgabe so schnell wie möglich.</p>
+                <div id="timer-display" class="text-right text-2xl font-bold text-yellow-400 mb-4">Zeit: 10s</div>
                 <div class="text-5xl font-bold text-center p-8 bg-gray-900 rounded-lg mb-6">${num1} ${operator} ${num2}</div>
                 <div class="flex flex-col items-center">
                     <input id="arithmetic-input" type="number" class="bg-gray-700 border border-gray-600 text-white text-2xl rounded-lg focus:ring-cyan-500 focus:border-cyan-500 block w-full p-4 text-center mb-4" placeholder="Deine Antwort" required>
@@ -161,9 +175,24 @@
                     checkArithmeticAnswer(answer);
                 }
             });
+
+            // NEU: Timer Logik
+            let timeLeft = 10;
+            taskTimeout = setTimeout(timeUpArithmetic, 10000); // 10 Sekunden Timer
+            countdownInterval = setInterval(() => {
+                timeLeft--;
+                const timerDisplay = document.getElementById('timer-display');
+                if(timerDisplay) {
+                    timerDisplay.textContent = `Zeit: ${timeLeft}s`;
+                }
+            }, 1000);
         }
 
         function checkArithmeticAnswer(correctAnswer) {
+            // Timer stoppen, sobald eine Antwort eingegeben wird
+            clearTimeout(taskTimeout);
+            clearInterval(countdownInterval);
+
             const userInput = document.getElementById('arithmetic-input').value;
             if (userInput === '') return;
 
@@ -172,7 +201,7 @@
                 level++;
                 showFeedback(true);
             } else {
-                score = Math.max(0, score - 1); // Punktabzug bei Fehler
+                score = Math.max(0, score - 1);
                 showFeedback(false, `Falsch. Richtige Antwort: ${correctAnswer}`);
             }
             setTimeout(loadArithmeticTask, 1500);
@@ -183,7 +212,7 @@
         function loadNumberMemoryTask() {
             taskContent.innerHTML = `
                 <h2 class="text-2xl font-bold mb-4 text-cyan-400">Zahlen merken - Level ${level}</h2>
-                <p class="text-gray-400 mb-6">Merke dir die folgende Zahlenkette. Sie wird gleich verschwinden.</p>
+                <p class="text-gray-400 mb-6">Merke dir die folgende Zahlenkette. Sie wird für 8 Sekunden angezeigt.</p>
                 <div id="number-display" class="text-5xl font-bold text-center p-8 bg-gray-900 rounded-lg mb-6 min-h-[100px] flex items-center justify-center">
                     <button id="start-btn" onclick="showNumberSequence()" class="btn bg-cyan-600 hover:bg-cyan-700 text-white font-bold py-3 px-8 rounded-lg text-xl">Start</button>
                 </div>
@@ -205,7 +234,8 @@
             const numberDisplay = document.getElementById('number-display');
             numberDisplay.innerHTML = numberSequence;
 
-            const displayTime = 1500 + level * 200; // Längere Anzeigezeit für längere Ketten
+            // GEÄNDERT: Feste Anzeigezeit von 8 Sekunden
+            const displayTime = 8000; 
             setTimeout(() => {
                 numberDisplay.innerHTML = '';
                 document.getElementById('input-area').classList.remove('hidden');
@@ -238,7 +268,7 @@
         function loadNumberReverseTask() {
             taskContent.innerHTML = `
                 <h2 class="text-2xl font-bold mb-4 text-cyan-400">Zahlen rückwärts - Level ${level}</h2>
-                <p class="text-gray-400 mb-6">Gib die folgende Zahlenkette in umgekehrter Reihenfolge ein.</p>
+                <p class="text-gray-400 mb-6">Merke dir die Kette und gib sie rückwärts ein. Anzeigezeit: 8 Sekunden.</p>
                 <div id="reverse-number-display" class="text-5xl font-bold text-center p-8 bg-gray-900 rounded-lg mb-6 min-h-[100px] flex items-center justify-center">
                     <button id="start-reverse-btn" onclick="showReverseNumberSequence()" class="btn bg-cyan-600 hover:bg-cyan-700 text-white font-bold py-3 px-8 rounded-lg text-xl">Start</button>
                 </div>
@@ -260,7 +290,8 @@
             const numberDisplay = document.getElementById('reverse-number-display');
             numberDisplay.innerHTML = reverseNumberSequence;
 
-            const displayTime = 1500 + level * 250;
+            // GEÄNDERT: Feste Anzeigezeit von 8 Sekunden
+            const displayTime = 8000;
             setTimeout(() => {
                 numberDisplay.innerHTML = '';
                 document.getElementById('reverse-input-area').classList.remove('hidden');
@@ -297,8 +328,12 @@
             } else {
                 feedbackIndicator.className = 'mt-4 h-2 rounded-full bg-red-500 opacity-100';
                 if (message) {
+                    // Verhindern, dass mehrere Fehlermeldungen hinzugefügt werden
+                    const existingMessage = taskContent.querySelector('.error-message');
+                    if (existingMessage) existingMessage.remove();
+
                     const tempMessage = document.createElement('div');
-                    tempMessage.className = 'text-center text-red-400 font-bold mt-2';
+                    tempMessage.className = 'text-center text-red-400 font-bold mt-2 error-message';
                     tempMessage.textContent = message;
                     taskContent.appendChild(tempMessage);
                 }
